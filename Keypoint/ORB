@@ -1,0 +1,12 @@
+import cv2 as cv
+import numpy as np
+import matplotlib.pyplot as plt
+
+### ORB Keypoint ###
+orb = cv.ORB_create()
+kp = orb.detect(img_sharp,None)
+kp, des = orb.compute(img_sharp, kp)
+img_orb = cv.drawKeypoints(img_sharp, kp, None, color=(0,255,0), flags=0)
+
+cv.imshow('ORB Keypoint', img_orb)
+cv.waitKey()
