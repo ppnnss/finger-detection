@@ -30,27 +30,6 @@ class Ui_MainWindow(QMainWindow):
         self.label.setFont(font)
         self.label.setObjectName("label")
 
-        # self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        # self.label_2.setGeometry(QtCore.QRect(90, 88, 700, 55))
-        # font = QtGui.QFont()
-        # font.setPointSize(16)
-        # self.label_2.setFont(font)
-        # self.label_2.setObjectName("label_2")
-
-        # self.label_3 = QtWidgets.QLabel(self.centralwidget)
-        # self.label_3.setGeometry(QtCore.QRect(90, 470, 100, 30))
-        # font = QtGui.QFont()
-        # font.setPointSize(12)
-        # self.label_3.setFont(font)
-        # self.label_3.setObjectName("label_3")
-
-        # self.label_4 = QtWidgets.QLabel(self.centralwidget)
-        # self.label_4.setGeometry(QtCore.QRect(360, 510, 100, 35))
-        # font = QtGui.QFont()
-        # font.setPointSize(14)
-        # self.label_4.setFont(font)
-        # self.label_4.setObjectName("label_4")
-
         self.label_5 = QtWidgets.QLabel(self.centralwidget) #input img1
         self.label_5.setGeometry(QtCore.QRect(90, 99, 330, 450))
         self.label_5.setAutoFillBackground(True)
@@ -132,9 +111,10 @@ class Ui_MainWindow(QMainWindow):
         self.image1 = QFileDialog.getOpenFileName(MainWindow, "Open File", r"C:\Users\User\Documents\___001Praew's\1-year4\image processing", "PNG Files (*.png);; Jpg Files (*.jpg)")
         self.pixmap1 = QPixmap(self.image1[0])
         # QPixmap.setScaledContents( true );
-        self.label_5.setPixmap(self.pixmap1)
+        self.label_5.setPixmap(self.pixmap1.scaled(self.label_5.width(), self.label_5.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
         # print(type(self.image1))
         return self.image1
+
 
     def clicker2(self):
         self.image2 = QFileDialog.getOpenFileName(MainWindow, "Open File", r"C:\Users\User\Documents\___001Praew's\1-year4\image processing", "PNG Files (*.png);; Jpg Files (*.jpg)")
@@ -142,31 +122,41 @@ class Ui_MainWindow(QMainWindow):
         self.label_6.setPixmap(self.pixmap2)
         return self.image2
 
-    def converttothin_cvqt(self):  
-        self.image = cv.imread(self.image1[0])
+    def converttothin_cvqt(self, image): 
+        image = self.image1 
+        self.image = cv.imread(image[0])
         # self.image = cv.cvtColor(self.image, cv.COLOR_BGR2GRAY)
         # height, width = self.image.shape[:2]
         mask = np.zeros(self.image.shape[:2],np.uint8)
         bgdModel = np.zeros((1,65),np.float64)
         fgdModel = np.zeros((1,65),np.float64)
         height, width = self.image.shape[:2]
-        rect = (10,10,width-40,height-40)  #(x,y,w,h)
-        new_mask = cv.grabCut(self.image, mask, rect, bgdModel, fgdModel,5,cv.GC_INIT_WITH_RECT)
-        mask2 = np.where((new_mask==2)|(new_mask==0),0,1).astype("uint8")
-        self.img1 = (self.image)*(mask2)
+        # height, width, _ = self.image.shape
+        # left_margin_proportion = 0.3
+        # right_margin_proportion = 0.3
+        # up_margin_proportion = 0.1
+        # down_margin_proportion = 0.1
+
+        # rect = (
+        #     int(width * left_margin_proportion),
+        #     int(height * up_margin_proportion),
+        #     int(width * (1 - right_margin_proportion)),
+        #     int(height * (1 - down_margin_proportion)),
+        # )
+        cv.setRNGSeed(0)
+        rect = (15,25,width-20,height-30)  #(x,y,w,h)
+        new_mask, fgdModel, bgdModel  = cv.grabCut(self.image, mask, rect, bgdModel, fgdModel,10,cv.GC_INIT_WITH_RECT)
+        mask2 = np.where((new_mask==cv.GC_PR_BGD)|(new_mask==cv.GC_BGD),0,1).astype("uint8")
+        self.img1 = (self.image)*mask2[:,:,np.newaxis]
+        # print((self.img1.shape))
+        # print((mask2.shape))
         height1, width1, ch1 = self.img1.shape
         convo = ch1 * width1
-        self.img1 = QtGui.QImage(self.img1, width1, height1, convo, QImage.Format_Grayscale8)
-        # self.img_resize = self.img1.scaled(self.label_7.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        self.img1 = QtGui.QImage(self.img1, width1, height1, convo, QImage.Format_BGR888)
         self.img_resize = QtGui.QPixmap.fromImage(self.img1)
         self.label_7.setPixmap(self.img_resize.scaled(self.label_7.width(), self.label_7.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
         # self.label_7.setScaledContents(1)
         cv.waitKey()
-        # self.pixmap = QPixmap(img1[0])
-        # self.image = cv.imread(np.array(self.pixmap))
-        # self.image = QtGui.QImage(self.pixmap.data, self.pixmap.shape[1], self.pixmap.shape[0], QImage.Format_Grayscale8)
-        # self.image.setPixmap(QtGui.QPixmap.fromImage(self.pixmap))
-        # self.label_7.setPixmap(self.pixmap)
 
     # def clicker4(self):
     #     self.label_9.setText('Test2')
@@ -187,7 +177,7 @@ class Ui_MainWindow(QMainWindow):
         self.label_10.setText(_translate("MainWindow", "Match / Not Match"))
         self.pushButton.setText(_translate("MainWindow", "Insert image 1"))
         self.pushButton_2.setText(_translate("MainWindow", "Insert image 2"))
-        self.pushButton_3.setText(_translate("MainWindow", "Click for skeletonize the images"))
+        self.pushButton_3.setText(_translate("MainWindow", "Click to skeletonize the images"))
         self.pushButton_4.setText(_translate("MainWindow", "Start the detection process"))
 
         self.show()
