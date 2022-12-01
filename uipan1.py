@@ -131,18 +131,6 @@ class Ui_MainWindow(QMainWindow):
         bgdModel = np.zeros((1,65),np.float64)
         fgdModel = np.zeros((1,65),np.float64)
         height, width = self.image.shape[:2]
-        # height, width, _ = self.image.shape
-        # left_margin_proportion = 0.3
-        # right_margin_proportion = 0.3
-        # up_margin_proportion = 0.1
-        # down_margin_proportion = 0.1
-
-        # rect = (
-        #     int(width * left_margin_proportion),
-        #     int(height * up_margin_proportion),
-        #     int(width * (1 - right_margin_proportion)),
-        #     int(height * (1 - down_margin_proportion)),
-        # )
         cv.setRNGSeed(0)
         rect = (15,25,width-20,height-30)  #(x,y,w,h)
         new_mask, fgdModel, bgdModel  = cv.grabCut(self.image, mask, rect, bgdModel, fgdModel,10,cv.GC_INIT_WITH_RECT)
@@ -155,7 +143,7 @@ class Ui_MainWindow(QMainWindow):
         self.img1 = QtGui.QImage(self.img1, width1, height1, convo, QImage.Format_BGR888)
         self.img_resize = QtGui.QPixmap.fromImage(self.img1)
         self.label_7.setPixmap(self.img_resize.scaled(self.label_7.width(), self.label_7.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
-        # self.label_7.setScaledContents(1)
+       
         cv.waitKey()
 
     # def clicker4(self):
