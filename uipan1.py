@@ -6,8 +6,6 @@ from PyQt5.QtWidgets import QFileDialog, QMainWindow, QApplication
 import sys
 import cv2 as cv
 import numpy as np
-from PIL import Image as im
-# import matplotlib.pyplot as plt
 
 
 class Ui_MainWindow(QMainWindow):
@@ -122,28 +120,68 @@ class Ui_MainWindow(QMainWindow):
         self.label_6.setPixmap(self.pixmap2)
         return self.image2
 
-    def converttothin_cvqt(self, image): 
-        image = self.image1 
-        self.image = cv.imread(image[0])
-        # self.image = cv.cvtColor(self.image, cv.COLOR_BGR2GRAY)
-        # height, width = self.image.shape[:2]
+    def converttothin_cvqt(self): 
+        #input image 1 operation
+        self.image = cv.imread(self.image1[0])
         mask = np.zeros(self.image.shape[:2],np.uint8)
         bgdModel = np.zeros((1,65),np.float64)
         fgdModel = np.zeros((1,65),np.float64)
-        height, width = self.image.shape[:2]
+        height, width, _ = self.image.shape   
         cv.setRNGSeed(0)
         rect = (15,25,width-20,height-30)  #(x,y,w,h)
         new_mask, fgdModel, bgdModel  = cv.grabCut(self.image, mask, rect, bgdModel, fgdModel,10,cv.GC_INIT_WITH_RECT)
         mask2 = np.where((new_mask==cv.GC_PR_BGD)|(new_mask==cv.GC_BGD),0,1).astype("uint8")
-        self.img1 = (self.image)*mask2[:,:,np.newaxis]
-        # print((self.img1.shape))
-        # print((mask2.shape))
-        height1, width1, ch1 = self.img1.shape
-        convo = ch1 * width1
-        self.img1 = QtGui.QImage(self.img1, width1, height1, convo, QImage.Format_BGR888)
-        self.img_resize = QtGui.QPixmap.fromImage(self.img1)
-        self.label_7.setPixmap(self.img_resize.scaled(self.label_7.width(), self.label_7.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
-       
+        self.grabcut = (self.image)*mask2[:,:,np.newaxis]
+        background = cv.absdiff(self.image, self.grabcut)
+        background[np.where((background > [0,0,0]).all(axis = 2))] = [255,255,255]
+        outremove = background + self.grabcut
+        gray1 = cv.cvtColor(outremove, cv.COLOR_BGR2GRAY)
+        img_blur = cv.GaussianBlur(gray1, (5,5), 0)
+        img_canny = cv.Canny(img_blur, 20, 10)
+        sharp55 = np.array([[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,9,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1]])
+        img_sharp = cv.filter2D(img_canny, -1, sharp55)
+        ret, thresh = cv.threshold(img_sharp, 127, 255, cv.THRESH_BINARY)
+        thin = cv.ximgproc.thinning(thresh)
+        sift = cv.xfeatures2d.SIFT_create()
+        kp, des = sift.detectAndCompute(thin, None)
+        keypoint = cv.drawKeypoints(thin, kp, thin, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DEFAULT)
+        # print("\nNumber of image 1 keypoints Detected: ", len(kp))    
+        h, w, ch = keypoint.shape
+        convo = ch * w
+        self.kp = QtGui.QImage(keypoint, w, h, convo, QImage.Format_BGR888)
+        self.kp1 = QtGui.QPixmap.fromImage(self.kp)
+        self.label_7.setPixmap(self.kp1.scaled(self.label_7.width(), self.label_7.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
+
+        #input image 2 operation
+        self.image2 = cv.imread(self.image2[0])
+        mask2 = np.zeros(self.image2.shape[:2],np.uint8)
+        bgdModel2 = np.zeros((1,65),np.float64)
+        fgdModel2 = np.zeros((1,65),np.float64)
+        height2, width2, ch2 = self.image2.shape   
+        cv.setRNGSeed(0)
+        rect2 = (15,25,width2-20,height2-30)  #(x,y,w,h)
+        new_mask2, fgdModel2, bgdModel2  = cv.grabCut(self.image2, mask2, rect2, bgdModel2, fgdModel2,10,cv.GC_INIT_WITH_RECT)
+        masknew = np.where((new_mask2==cv.GC_PR_BGD)|(new_mask2==cv.GC_BGD),0,1).astype("uint8")
+        self.grabcut2 = (self.image2)*masknew[:,:,np.newaxis]
+        background2 = cv.absdiff(self.image2, self.grabcut2)
+        background2[np.where((background2 > [0,0,0]).all(axis = 2))] = [255,255,255]
+        outremove2 = background2 + self.grabcut2
+        gray2 = cv.cvtColor(outremove2, cv.COLOR_BGR2GRAY)
+        img_blur2 = cv.GaussianBlur(gray2, (5,5), 0)
+        img_canny2 = cv.Canny(img_blur2, 20, 10)
+        sharp55_2 = np.array([[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,9,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1]])
+        img_sharp2 = cv.filter2D(img_canny2, -1, sharp55_2)
+        ret2, thresh2 = cv.threshold(img_sharp2, 127, 255, cv.THRESH_BINARY)
+        thin2 = cv.ximgproc.thinning(thresh2)
+        sift2 = cv.xfeatures2d.SIFT_create()
+        kp2, des2 = sift2.detectAndCompute(thin2, None)
+        keypoint2 = cv.drawKeypoints(thin2, kp2, thin2, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DEFAULT)
+        # print("\nNumber of image 1 keypoints Detected: ", len(kp))    
+        h2, w2, ch2 = keypoint2.shape
+        convo2 = ch2 * w2
+        self.kp2 = QtGui.QImage(keypoint2, w2, h2, convo2, QImage.Format_BGR888)
+        self.kp_2 = QtGui.QPixmap.fromImage(self.kp2)
+        self.label_8.setPixmap(self.kp_2.scaled(self.label_8.width(), self.label_8.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
         cv.waitKey()
 
     # def clicker4(self):
@@ -165,7 +203,7 @@ class Ui_MainWindow(QMainWindow):
         self.label_10.setText(_translate("MainWindow", "Match / Not Match"))
         self.pushButton.setText(_translate("MainWindow", "Insert image 1"))
         self.pushButton_2.setText(_translate("MainWindow", "Insert image 2"))
-        self.pushButton_3.setText(_translate("MainWindow", "Click to skeletonize the images"))
+        self.pushButton_3.setText(_translate("MainWindow", "Convert to thin and find the keypoint"))
         self.pushButton_4.setText(_translate("MainWindow", "Start the detection process"))
 
         self.show()
