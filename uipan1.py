@@ -84,7 +84,7 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_3.setObjectName("pushButton_3")
 
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget) #click for the detection
-        self.pushButton_4.setGeometry(QtCore.QRect(200, 750, 330, 35))
+        self.pushButton_4.setGeometry(QtCore.QRect(200, 750, 300, 40))
         self.pushButton_4.setObjectName("pushButton_4")
         self.pushButton_4.setIcon(QIcon('icon.png'))
 
@@ -104,20 +104,19 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton.clicked.connect(self.clicker1)
         self.pushButton_2.clicked.connect(self.clicker2)
         self.pushButton_3.clicked.connect(self.converttothin_cvqt)
+        self.pushButton_4.clicked.connect(self.matching)
 
     def clicker1(self):
-        self.image1 = QFileDialog.getOpenFileName(MainWindow, "Open File", r"C:\Users\User\Documents\___001Praew's\1-year4\image processing", "PNG Files (*.png);; Jpg Files (*.jpg)")
+        self.image1 = QFileDialog.getOpenFileName(MainWindow, "Open File", r"C:\Users\User\Documents\___001Praew's\1-year4\image processing\input" , "PNG Files (*.png);; Jpg Files (*.jpg)")
         self.pixmap1 = QPixmap(self.image1[0])
-        # QPixmap.setScaledContents( true );
         self.label_5.setPixmap(self.pixmap1.scaled(self.label_5.width(), self.label_5.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
-        # print(type(self.image1))
         return self.image1
 
 
     def clicker2(self):
-        self.image2 = QFileDialog.getOpenFileName(MainWindow, "Open File", r"C:\Users\User\Documents\___001Praew's\1-year4\image processing", "PNG Files (*.png);; Jpg Files (*.jpg)")
+        self.image2 = QFileDialog.getOpenFileName(MainWindow, "Open File", r"C:\Users\User\Documents\___001Praew's\1-year4\image processing\input", "PNG Files (*.png);; Jpg Files (*.jpg)")
         self.pixmap2 = QPixmap(self.image2[0])
-        self.label_6.setPixmap(self.pixmap2)
+        self.label_6.setPixmap(self.pixmap2.scaled(self.label_6.width(), self.label_6.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
         return self.image2
 
     def converttothin_cvqt(self): 
@@ -138,14 +137,14 @@ class Ui_MainWindow(QMainWindow):
         gray1 = cv.cvtColor(outremove, cv.COLOR_BGR2GRAY)
         img_blur = cv.GaussianBlur(gray1, (5,5), 0)
         img_canny = cv.Canny(img_blur, 20, 10)
+        sharp33 = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
         sharp55 = np.array([[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,9,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1]])
-        img_sharp = cv.filter2D(img_canny, -1, sharp55)
+        img_sharp = cv.filter2D(img_canny, -1, sharp33)
         ret, thresh = cv.threshold(img_sharp, 127, 255, cv.THRESH_BINARY)
         thin = cv.ximgproc.thinning(thresh)
         sift = cv.xfeatures2d.SIFT_create()
-        kp, des = sift.detectAndCompute(thin, None)
+        kp, self.des = sift.detectAndCompute(thin, None)
         keypoint = cv.drawKeypoints(thin, kp, thin, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DEFAULT)
-        # print("\nNumber of image 1 keypoints Detected: ", len(kp))    
         h, w, ch = keypoint.shape
         convo = ch * w
         self.kp = QtGui.QImage(keypoint, w, h, convo, QImage.Format_BGR888)
@@ -169,32 +168,32 @@ class Ui_MainWindow(QMainWindow):
         gray2 = cv.cvtColor(outremove2, cv.COLOR_BGR2GRAY)
         img_blur2 = cv.GaussianBlur(gray2, (5,5), 0)
         img_canny2 = cv.Canny(img_blur2, 20, 10)
+        sharp33_2 = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
         sharp55_2 = np.array([[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,9,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1]])
-        img_sharp2 = cv.filter2D(img_canny2, -1, sharp55_2)
+        img_sharp2 = cv.filter2D(img_canny2, -1, sharp33_2)
         ret2, thresh2 = cv.threshold(img_sharp2, 127, 255, cv.THRESH_BINARY)
         thin2 = cv.ximgproc.thinning(thresh2)
         sift2 = cv.xfeatures2d.SIFT_create()
-        kp2, des2 = sift2.detectAndCompute(thin2, None)
+        kp2, self.des2 = sift2.detectAndCompute(thin2, None)
         keypoint2 = cv.drawKeypoints(thin2, kp2, thin2, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DEFAULT)
-        # print("\nNumber of image 1 keypoints Detected: ", len(kp))    
         h2, w2, ch2 = keypoint2.shape
         convo2 = ch2 * w2
         self.kp2 = QtGui.QImage(keypoint2, w2, h2, convo2, QImage.Format_BGR888)
         self.kp_2 = QtGui.QPixmap.fromImage(self.kp2)
         self.label_8.setPixmap(self.kp_2.scaled(self.label_8.width(), self.label_8.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
-        cv.waitKey()
 
-    # def clicker4(self):
-    #     self.label_9.setText('Test2')
-    #     self.label_10.setText('Test2')
+        return self.des, self.des2
+
+    def matching(self):
+        matcher = cv.DescriptorMatcher_create(cv.DescriptorMatcher_FLANNBASED)  
+        nn_match = matcher.knnMatch(self.des, self.des2, 2)
+        bf = cv.BFMatcher(cv.NORM_L1, crossCheck=True)
+        matches = sorted(bf.match(self.des, self.des2), key= lambda match:match.distance)
 
     def retranslateUi(self, MainWindow): 
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Fingerprint Detection by Image Processing"))
         self.label.setText(_translate("MainWindow", "Please insert 2 images for the detection"))
-        # self.label_2.setText(_translate("MainWindow", "Please insert 2 images for the detection"))
-        # self.label_3.setText(_translate("MainWindow", "Result"))
-        # self.label_4.setText(_translate("MainWindow", "Match"))
         self.label_5.setText(_translate("MainWindow", "Image 1"))
         self.label_6.setText(_translate("MainWindow", "Image 2"))
         self.label_7.setText(_translate("MainWindow", "Thinned image 1"))
