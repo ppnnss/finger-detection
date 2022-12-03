@@ -64,11 +64,30 @@ class Ui_MainWindow(QMainWindow):
         self.label_9.setObjectName("label_9")
 
         self.label_10 = QtWidgets.QLabel(self.centralwidget) #match or not match
-        self.label_10.setGeometry(QtCore.QRect(1400, 700, 400, 170))
+        self.label_10.setGeometry(QtCore.QRect(1400, 740, 400, 90))
         self.label_10.setAutoFillBackground(True)
         self.label_10.setAlignment(QtCore.Qt.AlignCenter)
         self.label_10.setStyleSheet("border: 5px solid green;")
         self.label_10.setObjectName("label_10")
+
+        self.label_11 = QtWidgets.QLabel(self.centralwidget) 
+        self.label_11.setGeometry(QtCore.QRect(1400, 630, 400, 60))
+        self.label_11.setAutoFillBackground(True)
+        self.label_11.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_11.setObjectName("label_11")
+        font11 = QtGui.QFont()
+        font11.setPointSize(16)
+        self.label_11.setFont(font11)
+
+        self.label_12 = QtWidgets.QLabel(self.centralwidget) 
+        self.label_12.setGeometry(QtCore.QRect(1400, 870, 400, 60))
+        self.label_12.setAutoFillBackground(True)
+        self.label_12.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_12.setObjectName("label_12")
+        font12 = QtGui.QFont()
+        font12.setPointSize(13)
+        self.label_12.setFont(font12)
+
 
         self.pushButton = QtWidgets.QPushButton(self.centralwidget) #insert img1
         self.pushButton.setGeometry(QtCore.QRect(155, 570, 200, 40))
@@ -181,7 +200,7 @@ class Ui_MainWindow(QMainWindow):
         self.kpout2 = QtGui.QPixmap.fromImage(self.kpout2)
         self.label_8.setPixmap(self.kpout2.scaled(self.label_8.width(), self.label_8.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
 
-    def matching(self):
+    def matching(self):      
         matcher = cv.DescriptorMatcher_create(cv.DescriptorMatcher_FLANNBASED)  
         nn_match = matcher.knnMatch(self.des, self.des2, 2)
         bf = cv.BFMatcher(cv.NORM_L1, crossCheck=True)
@@ -196,7 +215,11 @@ class Ui_MainWindow(QMainWindow):
             keypoints = len(self.kp)
         else:
             keypoints = len(self.kp2)
-        print("\nGood Matches percentage: ", len(good) / keypoints * 100, "%") 
+        self.label_10.setNum((len(good) / keypoints * 100))
+        self.label_10.setWordWrap(True)
+        font = QtGui.QFont()
+        font.setPointSize(16)
+        self.label_10.setFont(font)
 
         out = cv.drawMatches(self.thin, self.kp, self.thin2, self.kp2, matches, flags=2, outImg=None)
         h, w, ch = out.shape
@@ -204,14 +227,15 @@ class Ui_MainWindow(QMainWindow):
         self.out = QtGui.QImage(out, w, h, convo, QImage.Format_BGR888)
         self.outimg = QtGui.QPixmap.fromImage(self.out)
         self.label_9.setPixmap(self.outimg.scaled(self.label_9.width(), self.label_9.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
+
         score = 0
         for match in matches:
             score += match.distance
         score_threshold = 200
         if score/len(nn_match) < score_threshold:
-            self.label_10.setText("Fingerprints match")
+            self.label_12.setText("Fingerprints match")
         else:
-            self.label_10.setText("Fingerprints don't match")
+            self.label_12.setText("Fingerprints don't match")
 
     def retranslateUi(self, MainWindow): 
         _translate = QtCore.QCoreApplication.translate
@@ -223,6 +247,8 @@ class Ui_MainWindow(QMainWindow):
         self.label_8.setText(_translate("MainWindow", "Thinned image 2"))
         self.label_9.setText(_translate("MainWindow", "Output image"))
         self.label_10.setText(_translate("MainWindow", "match/not match"))
+        self.label_11.setText(_translate("MainWindow", "Matching accuracy (%)"))
+        self.label_12.setText(_translate("MainWindow", "Match / Not Match"))
         self.pushButton.setText(_translate("MainWindow", "Insert image 1"))
         self.pushButton_2.setText(_translate("MainWindow", "Insert image 2"))
         self.pushButton_3.setText(_translate("MainWindow", "Convert to thin and find the keypoint"))
