@@ -61,19 +61,18 @@ class Ui_MainWindow(QMainWindow):
         self.label_9.setAutoFillBackground(True)
         self.label_9.setAlignment(QtCore.Qt.AlignCenter)
         self.label_9.setStyleSheet("border: 3px solid black;")
-        self.label_9.setObjectName("label_8")
+        self.label_9.setObjectName("label_9")
 
         self.label_10 = QtWidgets.QLabel(self.centralwidget) #match or not match
         self.label_10.setGeometry(QtCore.QRect(1400, 700, 400, 170))
         self.label_10.setAutoFillBackground(True)
         self.label_10.setAlignment(QtCore.Qt.AlignCenter)
         self.label_10.setStyleSheet("border: 5px solid green;")
-        self.label_10.setObjectName("label_8")
+        self.label_10.setObjectName("label_10")
 
         self.pushButton = QtWidgets.QPushButton(self.centralwidget) #insert img1
         self.pushButton.setGeometry(QtCore.QRect(155, 570, 200, 40))
         self.pushButton.setObjectName("pushButton")
-        # self.pushButton.setStyleSheet("background-color: green")
 
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget) #insert img2
         self.pushButton_2.setGeometry(QtCore.QRect(525, 570, 200, 40))
@@ -141,15 +140,15 @@ class Ui_MainWindow(QMainWindow):
         sharp55 = np.array([[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,9,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1]])
         img_sharp = cv.filter2D(img_canny, -1, sharp33)
         ret, thresh = cv.threshold(img_sharp, 127, 255, cv.THRESH_BINARY)
-        thin = cv.ximgproc.thinning(thresh)
+        self.thin = cv.ximgproc.thinning(thresh)
         sift = cv.xfeatures2d.SIFT_create()
-        kp, self.des = sift.detectAndCompute(thin, None)
-        keypoint = cv.drawKeypoints(thin, kp, thin, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DEFAULT)
-        h, w, ch = keypoint.shape
+        self.kp, self.des = sift.detectAndCompute(self.thin, None)
+        self.keypoint = cv.drawKeypoints(self.thin, self.kp, self.thin, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DEFAULT)
+        h, w, ch = self.keypoint.shape
         convo = ch * w
-        self.kp = QtGui.QImage(keypoint, w, h, convo, QImage.Format_BGR888)
-        self.kp1 = QtGui.QPixmap.fromImage(self.kp)
-        self.label_7.setPixmap(self.kp1.scaled(self.label_7.width(), self.label_7.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
+        self.kpout = QtGui.QImage(self.keypoint, w, h, convo, QImage.Format_BGR888)
+        self.kpout = QtGui.QPixmap.fromImage(self.kpout)
+        self.label_7.setPixmap(self.kpout.scaled(self.label_7.width(), self.label_7.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
 
         #input image 2 operation
         self.image2 = cv.imread(self.image2[0])
@@ -172,23 +171,47 @@ class Ui_MainWindow(QMainWindow):
         sharp55_2 = np.array([[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,9,-1,-1],[-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1]])
         img_sharp2 = cv.filter2D(img_canny2, -1, sharp33_2)
         ret2, thresh2 = cv.threshold(img_sharp2, 127, 255, cv.THRESH_BINARY)
-        thin2 = cv.ximgproc.thinning(thresh2)
+        self.thin2 = cv.ximgproc.thinning(thresh2)
         sift2 = cv.xfeatures2d.SIFT_create()
-        kp2, self.des2 = sift2.detectAndCompute(thin2, None)
-        keypoint2 = cv.drawKeypoints(thin2, kp2, thin2, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DEFAULT)
-        h2, w2, ch2 = keypoint2.shape
+        self.kp2, self.des2 = sift2.detectAndCompute(self.thin2, None)
+        self.keypoint2 = cv.drawKeypoints(self.thin2, self.kp2, self.thin2, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DEFAULT)
+        h2, w2, ch2 = self.keypoint2.shape
         convo2 = ch2 * w2
-        self.kp2 = QtGui.QImage(keypoint2, w2, h2, convo2, QImage.Format_BGR888)
-        self.kp_2 = QtGui.QPixmap.fromImage(self.kp2)
-        self.label_8.setPixmap(self.kp_2.scaled(self.label_8.width(), self.label_8.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
-
-        return self.des, self.des2
+        self.kpout2 = QtGui.QImage(self.keypoint2, w2, h2, convo2, QImage.Format_BGR888)
+        self.kpout2 = QtGui.QPixmap.fromImage(self.kpout2)
+        self.label_8.setPixmap(self.kpout2.scaled(self.label_8.width(), self.label_8.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
 
     def matching(self):
         matcher = cv.DescriptorMatcher_create(cv.DescriptorMatcher_FLANNBASED)  
         nn_match = matcher.knnMatch(self.des, self.des2, 2)
         bf = cv.BFMatcher(cv.NORM_L1, crossCheck=True)
         matches = sorted(bf.match(self.des, self.des2), key= lambda match:match.distance)
+        good = []
+        match_ratio = 0.8 
+        for m,n in nn_match:
+            if m.distance < match_ratio * n.distance:
+             good.append(m)
+        keypoints = 0
+        if len(self.kp) <= len(self.kp2):
+            keypoints = len(self.kp)
+        else:
+            keypoints = len(self.kp2)
+        print("\nGood Matches percentage: ", len(good) / keypoints * 100, "%") 
+
+        out = cv.drawMatches(self.thin, self.kp, self.thin2, self.kp2, matches, flags=2, outImg=None)
+        h, w, ch = out.shape
+        convo = ch * w
+        self.out = QtGui.QImage(out, w, h, convo, QImage.Format_BGR888)
+        self.outimg = QtGui.QPixmap.fromImage(self.out)
+        self.label_9.setPixmap(self.outimg.scaled(self.label_9.width(), self.label_9.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation) )
+        score = 0
+        for match in matches:
+            score += match.distance
+        score_threshold = 200
+        if score/len(nn_match) < score_threshold:
+            self.label_10.setText("Fingerprints match")
+        else:
+            self.label_10.setText("Fingerprints don't match")
 
     def retranslateUi(self, MainWindow): 
         _translate = QtCore.QCoreApplication.translate
@@ -199,7 +222,7 @@ class Ui_MainWindow(QMainWindow):
         self.label_7.setText(_translate("MainWindow", "Thinned image 1"))
         self.label_8.setText(_translate("MainWindow", "Thinned image 2"))
         self.label_9.setText(_translate("MainWindow", "Output image"))
-        self.label_10.setText(_translate("MainWindow", "Match / Not Match"))
+        self.label_10.setText(_translate("MainWindow", "match/not match"))
         self.pushButton.setText(_translate("MainWindow", "Insert image 1"))
         self.pushButton_2.setText(_translate("MainWindow", "Insert image 2"))
         self.pushButton_3.setText(_translate("MainWindow", "Convert to thin and find the keypoint"))
@@ -216,6 +239,3 @@ if __name__ == "__main__":
     MainWindow.show()
     app.exec_()
 
-# app = QApplication(sys.argv)
-# UIwindow = Ui_MainWindow()
-# app.exec_()
