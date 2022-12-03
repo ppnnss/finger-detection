@@ -11,11 +11,6 @@ import numpy as np
 class Ui_MainWindow(QMainWindow):
     def __init__(self):
         super(Ui_MainWindow, self).__init__()
-        # QtWidgets.QMainWindow.__init__(self)
-        # self.ui=Ui_MainWindow()
-        # self.ui.setupUi(self)
-        # uic.loadUi("uipan1.ui", self)
-
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1920,1080) #h,w
         self.centralwidget = QtWidgets.QWidget(MainWindow)
